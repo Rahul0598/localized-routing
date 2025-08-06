@@ -1,333 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Campus & City Routing</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      rel="stylesheet"
-    />
-    <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        font-family: Arial, sans-serif;
-      }
-      #map {
-        width: 100%;
-        height: 100%;
-      }
-      .legend {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255, 255, 255, 0.95);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        font-size: 13px;
-        line-height: 1.4;
-        min-width: 180px;
-      }
-      .legend h4 {
-        margin: 0 0 10px 0;
-        font-size: 14px;
-        font-weight: bold;
-        color: #333;
-      }
-      .legend-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .legend-line {
-        width: 25px;
-        height: 3px;
-        margin-right: 10px;
-        border-radius: 1px;
-      }
-      .legend-boundary {
-        width: 25px;
-        height: 15px;
-        margin-right: 10px;
-        border-radius: 2px;
-        border: 2px dashed #111;
-        background: rgba(17, 17, 17, 0.03);
-      }
-      .legend-marker {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 13px;
-        border: 3px solid;
-      }
-      .legend-text {
-        color: #555;
-        font-size: 12px;
-      }
-      .instructions {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        background: rgba(255, 255, 255, 0.95);
-        padding: 12px;
-        border-radius: 6px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        z-index: 1000;
-        font-size: 12px;
-        color: #555;
-        max-width: 250px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    
-    <!-- Legend -->
-    <div class="legend">
-      <h4>Map Legend</h4>
-      <div class="legend-item">
-        <div class="legend-boundary"></div>
-        <span class="legend-text">City Boundary</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-line" style="background-color: green;"></div>
-        <span class="legend-text">Walking Paths</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-line" style="background-color: gray;"></div>
-        <span class="legend-text">Road Centerlines</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-line" style="background-color: blue; height: 4px;"></div>
-        <span class="legend-text">Route</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-marker" style="border-color: black; background-color: black;"></div>
-        <span class="legend-text">Start Point</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-marker" style="border-color: red; background-color: red;"></div>
-        <span class="legend-text">End Point</span>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Campus & City Routing - Temperature Aware</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      font-size: 13px;
+      min-width: 200px;
+    }
+
+    .controls h4 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .time-selector {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .time-btn {
+      padding: 8px 12px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .time-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .time-btn.active {
+      background: #007cbb;
+      color: white;
+      border-color: #007cbb;
+    }
+
+    .temp-display {
+      font-size: 12px;
+      color: #555;
+      margin-top: 10px;
+      padding: 8px;
+      background: #f8f8f8;
+      border-radius: 4px;
+    }
+
+    .legend {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      font-size: 13px;
+      line-height: 1.4;
+      min-width: 180px;
+    }
+
+    .legend h4 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .legend-line {
+      width: 25px;
+      height: 3px;
+      margin-right: 10px;
+      border-radius: 1px;
+    }
+
+    .legend-boundary {
+      width: 25px;
+      height: 15px;
+      margin-right: 10px;
+      border-radius: 2px;
+      border: 2px dashed #111;
+      background: rgba(17, 17, 17, 0.03);
+    }
+
+    .legend-marker {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 13px;
+      border: 3px solid;
+    }
+
+    .legend-text {
+      color: #555;
+      font-size: 12px;
+    }
+
+    .temp-gradient {
+      display: flex;
+      height: 15px;
+      width: 100%;
+      margin: 8px 0;
+      border-radius: 2px;
+      background: linear-gradient(to right, #0066cc 0%, #00cc66 50%, #ffcc00 75%, #ff6600 90%, #cc0000 100%);
+    }
+
+    .temp-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      font-size: 12px;
+      color: #555;
+      max-width: 250px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <!-- Time Controls -->
+  <div class="controls">
+    <h4>Time of Day</h4>
+    <div class="time-selector">
+      <button class="time-btn active" data-time="morning">Morning</button>
+      <button class="time-btn" data-time="afternoon">Afternoon</button>
+      <button class="time-btn" data-time="evening">Evening</button>
+    </div>
+    <div class="temp-display">
+      <strong>Current Selection:</strong> Morning<br>
+      <span id="temp-info">Click a path to see temperature</span>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <h4>Map Legend</h4>
+    <div class="legend-item">
+      <div class="legend-boundary"></div>
+      <span class="legend-text">City Boundary</span>
+    </div>
+    <div style="margin: 8px 0;">
+      <div class="legend-text" style="margin-bottom: 4px;">Path Temperature:</div>
+      <div class="temp-gradient"></div>
+      <div class="temp-labels">
+        <span>Cool</span>
+        <span>Warm</span>
+        <span>Hot</span>
       </div>
     </div>
-
-    <!-- Instructions -->
-    <div class="instructions">
-      <strong>How to use:</strong><br>
-      1. Click to set start point (black)<br>
-      2. Click again to set end point (red)<br>
-      3. Click a third time to reset
+    <div class="legend-item">
+      <div class="legend-line" style="background-color: blue; height: 4px;"></div>
+      <span class="legend-text">Route</span>
     </div>
+    <div class="legend-item">
+      <div class="legend-marker" style="border-color: black; background-color: black;"></div>
+      <span class="legend-text">Start Point</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-marker" style="border-color: red; background-color: red;"></div>
+      <span class="legend-text">End Point</span>
+    </div>
+  </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/rbush@3.0.1/rbush.min.js"></script>
-    <script>
-      const map = L.map("map").setView([39.165, -86.526], 17);
+  <!-- Instructions -->
+  <div class="instructions">
+    <strong>How to use:</strong><br>
+    1. Select time of day (Morning/Afternoon/Evening)<br>
+    2. Click to set start point (black)<br>
+    3. Click again to set end point (red)<br>
+    4. Click a third time to reset<br>
+    5. Hover over paths to see temperatures
+  </div>
 
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-        {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-          subdomains: "abcd",
-          maxZoom: 19,
-        }
-      ).addTo(map);
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/rbush@3.0.1/rbush.min.js"></script>
+  <script>
+    const map = L.map("map").setView([39.165, -86.526], 17);
 
-      const SNAP_TOL = 10; // meters
-      const graph = new Map(); // id → { coord:[lng,lat], nbrs:[{id,cost}] }
-      const spatial = new RBush();
-
-      let startPt = null,
-        endPt = null,
-        routeLine = null;
-
-      // Unique ID for a coordinate
-      function idFrom([x, y]) {
-        return `${x.toFixed(6)},${y.toFixed(6)}`;
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: "abcd",
+        maxZoom: 19,
       }
-      function distM(a, b) {
-        return turf.distance(turf.point(a), turf.point(b)) * 1000;
-      }
+    ).addTo(map);
 
-      function ensureNode(coord) {
-        const id = idFrom(coord);
-        if (!graph.has(id)) {
-          graph.set(id, { coord, nbrs: [] });
-          spatial.insert({
-            minX: coord[0],
-            minY: coord[1],
-            maxX: coord[0],
-            maxY: coord[1],
-            id,
-          });
-        }
-        return id;
-      }
+    const SNAP_TOL = 10; // meters
+    const graph = new Map(); // id → { coord:[lng,lat], nbrs:[{id,cost}] }
+    const spatial = new RBush();
 
-      function addEdge(a, b) {
-        const aId = ensureNode(a),
-          bId = ensureNode(b);
-        const d = distM(a, b);
-        graph.get(aId).nbrs.push({ id: bId, cost: d });
-        graph.get(bId).nbrs.push({ id: aId, cost: d });
-      }
+    let currentTime = 'morning';
+    let geoLayers = [];
+    let tempData = new Map(); // Store temperature data for each feature
 
-      function snapCoord(coord) {
-        const tolDeg = SNAP_TOL / 111320;
-        const found = spatial.search({
-          minX: coord[0] - tolDeg,
-          maxX: coord[0] + tolDeg,
-          minY: coord[1] - tolDeg,
-          maxY: coord[1] + tolDeg,
+    let startPt = null,
+      endPt = null,
+      routeLine = null;
+
+    // Temperature color mapping
+    function getTemperatureColor(temp) {
+      if (temp < 60) return '#0066cc'; // Cool blue
+      if (temp < 70) return '#00cc66'; // Green
+      if (temp < 80) return '#ffcc00'; // Yellow
+      if (temp < 90) return '#ff6600'; // Orange
+      return '#cc0000'; // Hot red
+    }
+
+    // Unique ID for a coordinate
+    function idFrom([x, y]) {
+      return `${x.toFixed(6)},${y.toFixed(6)}`;
+    }
+    function distM(a, b) {
+      return turf.distance(turf.point(a), turf.point(b)) * 1000;
+    }
+
+    function ensureNode(coord) {
+      const id = idFrom(coord);
+      if (!graph.has(id)) {
+        graph.set(id, { coord, nbrs: [] });
+        spatial.insert({
+          minX: coord[0],
+          minY: coord[1],
+          maxX: coord[0],
+          maxY: coord[1],
+          id,
         });
-        for (const f of found) {
-          const d = distM(coord, graph.get(f.id).coord);
-          if (d <= SNAP_TOL) return f.id;
-        }
-        return ensureNode(coord);
       }
+      return id;
+    }
 
-      // GeoJSON loaders:
-      function loadBoundary(url) {
-        return fetch(url)
-          .then((r) => r.json())
-          .then((gj) => {
-            L.geoJSON(gj, {
-              style: {
-                color: "#111",
-                weight: 2,
-                fillOpacity: 0.03,
-                dashArray: "6 6",
-              },
-            }).addTo(map);
+    function addEdge(a, b) {
+      const aId = ensureNode(a),
+        bId = ensureNode(b);
+      const d = distM(a, b);
+      graph.get(aId).nbrs.push({ id: bId, cost: d });
+      graph.get(bId).nbrs.push({ id: aId, cost: d });
+    }
+
+    function snapCoord(coord) {
+      const tolDeg = SNAP_TOL / 111320;
+      const found = spatial.search({
+        minX: coord[0] - tolDeg,
+        maxX: coord[0] + tolDeg,
+        minY: coord[1] - tolDeg,
+        maxY: coord[1] + tolDeg,
+      });
+      for (const f of found) {
+        const d = distM(coord, graph.get(f.id).coord);
+        if (d <= SNAP_TOL) return f.id;
+      }
+      return ensureNode(coord);
+    }
+
+    // GeoJSON loaders:
+    function loadBoundary(url) {
+      return fetch(url)
+        .then((r) => r.json())
+        .then((gj) => {
+          L.geoJSON(gj, {
+            style: {
+              color: "#111",
+              weight: 2,
+              fillOpacity: 0.03,
+              dashArray: "6 6",
+            },
+          }).addTo(map);
+        });
+    }
+
+    function processLine(coords) {
+      for (let i = 0; i < coords.length - 1; i++) {
+        const a = [+coords[i][0], +coords[i][1]],
+          b = [+coords[i + 1][0], +coords[i + 1][1]];
+        const aId = snapCoord(a),
+          bId = snapCoord(b);
+        addEdge(graph.get(aId).coord, graph.get(bId).coord);
+      }
+    }
+
+    function loadGeo(url, defaultColor, layerType) {
+      return fetch(url)
+        .then((r) => r.json())
+        .then((gj) => {
+          const layer = L.geoJSON(gj, {
+            style: (feature) => {
+              const props = feature.properties;
+              const tempKey = `temp_${currentTime}`;
+              const temp = props[tempKey];
+
+              return {
+                color: temp ? getTemperatureColor(temp) : defaultColor,
+                weight: layerType === 'walks' ? 4 : 3,
+                opacity: 0.8
+              };
+            },
+            onEachFeature: (feature, layer) => {
+              const props = feature.properties;
+
+              // Store temperature data
+              const featureId = L.stamp(layer);
+              tempData.set(featureId, {
+                morning: props.temp_morning || 'N/A',
+                afternoon: props.temp_afternoon || 'N/A',
+                evening: props.temp_evening || 'N/A',
+                type: layerType,
+                material: props.Material || props.material || 'Unknown'
+              });
+
+              // Add hover effects
+              layer.on('mouseover', function (e) {
+                const data = tempData.get(featureId);
+                const currentTemp = data[currentTime];
+
+                document.getElementById('temp-info').innerHTML =
+                  `${data.type.toUpperCase()}: ${currentTemp}°F<br>Material: ${data.material}`;
+
+                this.setStyle({
+                  weight: layerType === 'walks' ? 6 : 5,
+                  opacity: 1
+                });
+              });
+
+              layer.on('mouseout', function (e) {
+                this.setStyle({
+                  weight: layerType === 'walks' ? 4 : 3,
+                  opacity: 0.8
+                });
+              });
+            }
+          }).addTo(map);
+
+          geoLayers.push({ layer, type: layerType });
+
+          // Process for routing graph
+          gj.features.forEach((f) => {
+            const g = f.geometry;
+            if (g.type === "LineString") processLine(g.coordinates);
+            else if (g.type === "MultiLineString")
+              g.coordinates.forEach(processLine);
+            else if (g.type === "Polygon") processLine(g.coordinates[0]);
           });
-      }
+        });
+    }
 
-      function processLine(coords) {
-        for (let i = 0; i < coords.length - 1; i++) {
-          const a = [+coords[i][0], +coords[i][1]],
-            b = [+coords[i + 1][0], +coords[i + 1][1]];
-          const aId = snapCoord(a),
-            bId = snapCoord(b);
-          addEdge(graph.get(aId).coord, graph.get(bId).coord);
-        }
-      }
+    // Update layer colors based on selected time
+    function updateLayerColors() {
+      geoLayers.forEach(({ layer, type }) => {
+        layer.eachLayer((sublayer) => {
+          if (sublayer.feature) {
+            const props = sublayer.feature.properties;
+            const tempKey = `temp_${currentTime}`;
+            const temp = props[tempKey];
 
-      function loadGeo(url, color) {
-        return fetch(url)
-          .then((r) => r.json())
-          .then((gj) => {
-            L.geoJSON(gj, { style: { color, weight: 3 } }).addTo(map);
-            gj.features.forEach((f) => {
-              const g = f.geometry;
-              if (g.type === "LineString") processLine(g.coordinates);
-              else if (g.type === "MultiLineString")
-                g.coordinates.forEach(processLine);
-              else if (g.type === "Polygon") processLine(g.coordinates[0]);
+            const color = temp ? getTemperatureColor(temp) : (type === 'walks' ? 'green' : 'gray');
+
+            sublayer.setStyle({
+              color: color,
+              weight: type === 'walks' ? 4 : 3,
+              opacity: 0.8
             });
-          });
-      }
-
-      // Routing functions
-      function aStar(sId, eId) {
-        const h = (id) => distM(graph.get(id).coord, graph.get(eId).coord);
-        const open = new Set([sId]),
-          came = new Map(),
-          gSc = new Map([[sId, 0]]),
-          fSc = new Map([[sId, h(sId)]]);
-        while (open.size) {
-          let cur = [...open].reduce((a, b) =>
-            fSc.get(a) < fSc.get(b) ? a : b
-          );
-          if (cur === eId) {
-            const path = [];
-            while (true) {
-              path.push(graph.get(cur).coord);
-              if (!came.has(cur)) break;
-              cur = came.get(cur);
-            }
-            return path.reverse();
           }
-          open.delete(cur);
-          for (const { id: nb, cost } of graph.get(cur).nbrs) {
-            const tg = gSc.get(cur) + cost;
-            if (!gSc.has(nb) || tg < gSc.get(nb)) {
-              came.set(nb, cur);
-              gSc.set(nb, tg);
-              fSc.set(nb, tg + h(nb));
-              open.add(nb);
-            }
+        });
+      });
+    }
+
+    // Time selector event handlers
+    document.querySelectorAll('.time-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Update active button
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+
+        // Update current time
+        currentTime = e.target.dataset.time;
+
+        // Update display
+        document.querySelector('.temp-display strong').nextSibling.textContent =
+          ` ${currentTime.charAt(0).toUpperCase() + currentTime.slice(1)}`;
+
+        // Update layer colors
+        updateLayerColors();
+
+        // Reset temp info
+        document.getElementById('temp-info').textContent = 'Click a path to see temperature';
+      });
+    });
+
+    // Routing functions
+    function aStar(sId, eId) {
+      const h = (id) => distM(graph.get(id).coord, graph.get(eId).coord);
+      const open = new Set([sId]),
+        came = new Map(),
+        gSc = new Map([[sId, 0]]),
+        fSc = new Map([[sId, h(sId)]]);
+      while (open.size) {
+        let cur = [...open].reduce((a, b) =>
+          fSc.get(a) < fSc.get(b) ? a : b
+        );
+        if (cur === eId) {
+          const path = [];
+          while (true) {
+            path.push(graph.get(cur).coord);
+            if (!came.has(cur)) break;
+            cur = came.get(cur);
+          }
+          return path.reverse();
+        }
+        open.delete(cur);
+        for (const { id: nb, cost } of graph.get(cur).nbrs) {
+          const tg = gSc.get(cur) + cost;
+          if (!gSc.has(nb) || tg < gSc.get(nb)) {
+            came.set(nb, cur);
+            gSc.set(nb, tg);
+            fSc.set(nb, tg + h(nb));
+            open.add(nb);
           }
         }
-        return null;
       }
+      return null;
+    }
 
-      function nearestNode(coord) {
-        let best = null,
-          minD = Infinity;
-        for (const [id, node] of graph.entries()) {
-          const d = distM(coord, node.coord);
-          if (d < minD) {
-            minD = d;
-            best = id;
-          }
+    function nearestNode(coord) {
+      let best = null,
+        minD = Infinity;
+      for (const [id, node] of graph.entries()) {
+        const d = distM(coord, node.coord);
+        if (d < minD) {
+          minD = d;
+          best = id;
         }
-        return best;
       }
+      return best;
+    }
 
-      function mark(pt, col) {
-        L.circleMarker(pt, {
-          radius: 6,
-          color: col,
-          weight: 3,
-          fillOpacity: 0.8,
-        }).addTo(map);
-      }
+    function mark(pt, col) {
+      L.circleMarker(pt, {
+        radius: 6,
+        color: col,
+        weight: 3,
+        fillOpacity: 0.8,
+      }).addTo(map);
+    }
 
-      // UI
-      map.on("click", (e) => {
-        if (!startPt) {
-          startPt = e.latlng;
-          mark(startPt, "black");
-        } else if (!endPt) {
-          endPt = e.latlng;
-          mark(endPt, "red");
-          const sId = nearestNode([startPt.lng, startPt.lat]),
-            eId = nearestNode([endPt.lng, endPt.lat]);
-          const path = aStar(sId, eId);
-          if (routeLine) map.removeLayer(routeLine);
-          if (path) {
-            routeLine = L.polyline(
-              path.map((c) => [c[1], c[0]]),
-              { color: "blue", weight: 4 }
-            ).addTo(map);
-          } else {
-            alert("No route found");
-          }
+    // UI
+    map.on("click", (e) => {
+      if (!startPt) {
+        startPt = e.latlng;
+        mark(startPt, "black");
+      } else if (!endPt) {
+        endPt = e.latlng;
+        mark(endPt, "red");
+        const sId = nearestNode([startPt.lng, startPt.lat]),
+          eId = nearestNode([endPt.lng, endPt.lat]);
+        const path = aStar(sId, eId);
+        if (routeLine) map.removeLayer(routeLine);
+        if (path) {
+          routeLine = L.polyline(
+            path.map((c) => [c[1], c[0]]),
+            { color: "blue", weight: 6, opacity: 0.9 }
+          ).addTo(map);
         } else {
-          // reset
-          startPt = endPt = null;
-          if (routeLine) map.removeLayer(routeLine);
-          map.eachLayer((l) => {
-            if (l instanceof L.CircleMarker) map.removeLayer(l);
-          });
+          alert("No route found");
         }
-      });
+      } else {
+        // reset
+        startPt = endPt = null;
+        if (routeLine) map.removeLayer(routeLine);
+        map.eachLayer((l) => {
+          if (l instanceof L.CircleMarker) map.removeLayer(l);
+        });
+        document.getElementById('temp-info').textContent = 'Click a path to see temperature';
+      }
+    });
 
-      // Load everything
-      Promise.all([
-        loadBoundary("./data/Bloomington_Boundary.geojson"),
-        loadGeo("./data/Walks.geojson", "green"),
-        loadGeo("./data/Bloomington_Road_Centerlines.geojson", "gray"),
-      ]).then(() => {
-        console.log("Graph built. Routing ready!");
-      });
-    </script>
-  </body>
+    // Load everything
+    Promise.all([
+      loadBoundary("./data/Bloomington_Boundary.geojson"),
+      loadGeo("./tagged_campus_streets.geojson", "green", "walks"),
+      loadGeo("./tagged_city_streets.geojson", "gray", "roads"),
+    ]).then(() => {
+      console.log("Graph built. Temperature-aware routing ready!");
+    });
+  </script>
+</body>
+
 </html>
